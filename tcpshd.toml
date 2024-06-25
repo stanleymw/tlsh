@@ -1,0 +1,10 @@
+# Configuration File for tcpsh Server
+name = "tcpsh Server" # Server Name
+
+[bind]
+ip = ""
+port = 3750
+
+[ssl]
+key = "key.pem"
+cert = "cert.pem"
