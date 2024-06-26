@@ -13,6 +13,8 @@ import sys
 hostname = "127.0.0.1"
 
 ssl_context = ssl.create_default_context()
+ssl_context.load_cert_chain("c_cert.pem", "c_key.pem")
+
 # Self Signed certificate
 ssl_context.check_hostname = False
 ssl_context.verify_mode = ssl.CERT_NONE

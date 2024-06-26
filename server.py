@@ -14,8 +14,18 @@ with open("tcpshd.toml", "rb") as config_file:
 
 assert config != None
 
-ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+#ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+ssl_context = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH, capath=config["auth"]["authorized_certificates"])
+
 ssl_context.load_cert_chain(config["ssl"]["cert"], config["ssl"]["key"])
+
+ssl_context.verify_mode = ssl.CERT_REQUIRED
+
+#ssl_context.load_verify_locations(capath="./authorized_certs/")
+#ssl_context.load_verify_locations(cafile="c_cert.pem")
+
+#ssl_context.check_hostname = False
+#ssl_context.verify_mode = ssl.CERT_NONE
 
 class Client():
     def __init__(self, reader, writer):
@@ -44,7 +54,7 @@ class Client():
         return str(self.getName())
 
 async def proxy_user_to_server(peer, server_writer):
-    while (data := await peer.receive(8192)):
+    while (data := await peer.receive(config["bufsize"])):
         # shared.notify(f"Got {len(data)} bytes from {peer}: {data}");
 
         #shared.notify(f"user -> server: {data}")
@@ -53,7 +63,7 @@ async def proxy_user_to_server(peer, server_writer):
     print("user -> server KILLED!")
 
 async def proxy_server_to_user(peer, server_reader):
-    while (data := await server_reader.read(8192)):
+    while (data := await server_reader.read(config["bufsize"])):
         # shared.notify(f"Sending {len(data)} bytes back");
         #shared.notify(f"server -> user: {data}")
         await peer.send(data)
@@ -66,6 +76,7 @@ async def handle_client(reader, writer):
     # writer to send data to the client
     peer = Client(reader, writer)
     shared.notify(f"New Connection from {peer}")
+    shared.notify(f"Peer cert: {writer.get_extra_info('peercert')}")
 
     # Connect to Bash server for this client
     bash_reader, bash_writer = await asyncio.open_unix_connection("./bash.sock")
