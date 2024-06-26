@@ -33,7 +33,6 @@ def raw_mode(file):
 async def printReads(reader, astdout):
     while (data := await reader.read(8192)):
         #shared.notify(f"Received: {data.decode()}")
-
         astdout.write(data)
         await astdout.drain()
         #sys.stdout.buffer.write(data)
@@ -43,6 +42,8 @@ async def sendMessage(writer, astdin):
     while True:
         #msg = await aioconsole.ainput("")
         msg = await astdin.read(1)
+        if (writer.is_closing()):
+            return
         writer.write(msg)
         await writer.drain()
 

@@ -53,7 +53,7 @@ class Client():
     def __str__(self):
         return str(self.getName())
 
-async def proxy_user_to_server(peer, server_writer):
+async def proxy_user_to_server(peer, server_writer, tg):
     while (data := await peer.receive(config["bufsize"])):
         # shared.notify(f"Got {len(data)} bytes from {peer}: {data}");
 
@@ -62,12 +62,18 @@ async def proxy_user_to_server(peer, server_writer):
         await server_writer.drain()
     print("user -> server KILLED!")
 
-async def proxy_server_to_user(peer, server_reader):
+    # TODO: change if Python adds support for aborting task group without using internal method
+    tg._abort();
+
+async def proxy_server_to_user(peer, server_reader, tg):
     while (data := await server_reader.read(config["bufsize"])):
         # shared.notify(f"Sending {len(data)} bytes back");
         #shared.notify(f"server -> user: {data}")
         await peer.send(data)
     print("server -> user KILLED!")
+
+    # TODO: change if Python adds support for aborting task group without using internal method
+    tg._abort();
 
 async def handle_client(reader, writer):
     # This function is called when a new client is connected
@@ -85,10 +91,11 @@ async def handle_client(reader, writer):
     await peer.send(b"[+] Shell connected!\n")
 
     async with asyncio.TaskGroup() as tg:
-        u_to_s = tg.create_task(proxy_user_to_server(peer, bash_writer))
-        s_to_u = tg.create_task(proxy_server_to_user(peer, bash_reader))
+        u_to_s = tg.create_task(proxy_user_to_server(peer, bash_writer, tg))
+        s_to_u = tg.create_task(proxy_server_to_user(peer, bash_reader, tg))
 
     shared.notify("Connection closed.")
+
     writer.close()
     await writer.wait_closed()
 
