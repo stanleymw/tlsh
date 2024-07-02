@@ -1,0 +1,14 @@
+# Configuration File for tlsh Server
+name = "tlsh Server" # Server Name
+bufsize = 4096 # recv() buffer size
+
+[auth]
+authorized_certificates = "authorized_certs/" # Directory containing the certificates of clients that should be allowed to connect to this tlsh server
+
+[bind]
+ip = ""
+port = 3750
+
+[ssl]
+key = "s_key.pem"
+cert = "s_cert_signed.pem"

@@ -1,23 +1,38 @@
 #!/usr/bin/env python3
 import asyncio
 import aioconsole
+import argparse
+import pathlib
+import contextlib
 import socket
 import ssl
 import shared
 import threading
-import contextlib
 import termios
 import sys
 
-# TODO: allow client to define hostname
-hostname = "127.0.0.1"
+parser = argparse.ArgumentParser(
+                    prog='tlsh',
+                    description='tlsh Client',
+                    epilog='Created by stanleymw')
 
-ssl_context = ssl.create_default_context()
-ssl_context.load_cert_chain("c_cert.pem", "c_key.pem")
+parser.add_argument('hostname')
+
+parser.add_argument('certificate', type=pathlib.Path)
+parser.add_argument('key', type=pathlib.Path)
+
+parser.add_argument("-p", "--port", type=int, default = 3750)
+args = parser.parse_args()
+print(args)
+
+ssl_context = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH)
+
+ssl_context.load_cert_chain(str(args.certificate), str(args.key))
+ssl_context.load_verify_locations(cafile="LocalCA/ca_cert.pem") # TODO: let client specify localCA
 
 # Self Signed certificate
 ssl_context.check_hostname = False
-ssl_context.verify_mode = ssl.CERT_NONE
+ssl_context.verify_mode = ssl.CERT_REQUIRED
 
 @contextlib.contextmanager
 def raw_mode(file):
@@ -50,7 +65,7 @@ async def sendMessage(writer, astdin):
 async def main():
     # Create Connection
     reader, writer = await asyncio.open_connection(
-        hostname, 3750, ssl=ssl_context)
+        args.hostname, args.port, ssl=ssl_context)
     shared.notify("Connection opened!")
 
     # Start Send Loop

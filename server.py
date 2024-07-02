@@ -9,7 +9,7 @@ import time
 import subprocess
 
 config = None
-with open("tcpshd.toml", "rb") as config_file:
+with open("tlshd.toml", "rb") as config_file:
     config = tomllib.load(config_file)
 
 assert config != None
